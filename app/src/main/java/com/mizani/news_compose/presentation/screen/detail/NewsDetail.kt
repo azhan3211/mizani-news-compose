@@ -14,25 +14,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.mizani.news_compose.utils.DateFormatter.convertDateTo
 import com.mizani.news_compose.R
-import com.mizani.news_compose.presentation.screen.Screen
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun NewsDetail(
     navController: NavController,
     id: String,
+    navigateToWebView: (String) -> Unit,
     viewModel: NewsDetailViewModel = hiltViewModel()
 ) {
 
@@ -105,8 +101,7 @@ fun NewsDetail(
                         fontSize = 14.sp,
                         color = Color.Blue,
                         modifier = Modifier.clickable {
-                            val url = URLEncoder.encode(viewModel.newsDetail.value.url, StandardCharsets.UTF_8.toString())
-                            navController.navigate(Screen.NewsWebView.setUrl(url))
+                            navigateToWebView.invoke(viewModel.newsDetail.value.url)
                         }
                     )
                 }

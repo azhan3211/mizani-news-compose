@@ -4,7 +4,7 @@ sealed class Screen(val route: String) {
 
     object NewsList : Screen("NewsList")
     object NewsWebView : Screen("NewsWebView") {
-        fun setUrl(url: String) : String {
+        fun withUrl(url: String) : String {
             return route.plus("/$url")
         }
         fun getUrlArg() : String {
@@ -15,7 +15,7 @@ sealed class Screen(val route: String) {
         }
     }
     object NewsDetail : Screen("NewsDetail") {
-        fun setId(id: String) : String {
+        fun withId(id: String) : String {
             return route.plus("/$id")
         }
         fun getIdArg() : String {

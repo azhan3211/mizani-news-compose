@@ -10,13 +10,17 @@ import com.mizani.news_compose.presentation.screen.Screen
 import com.mizani.news_compose.presentation.screen.detail.NewsDetail
 import com.mizani.news_compose.presentation.screen.list.NewsList
 import com.mizani.news_compose.presentation.screen.webview.NewsWebView
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = Screen.NewsList.route) {
         composable(route = Screen.NewsList.route) {
-            NewsList(navController = navController)
+            NewsList(navigateToDetail = { id ->
+                navController.navigate(Screen.NewsDetail.withId(id))
+            })
         }
         composable(
             route = Screen.NewsDetail.fullPath(),
@@ -27,7 +31,10 @@ fun Navigation() {
             )
         ) {
             val id = it.arguments?.getString(Screen.NewsDetail.getIdArg()).orEmpty()
-            NewsDetail(navController = navController, id)
+            NewsDetail(navController = navController, id, navigateToWebView = { url ->
+                val url = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
+                navController.navigate(Screen.NewsWebView.withUrl(url))
+            })
         }
         composable(
             route = Screen.NewsWebView.fullPath(),
