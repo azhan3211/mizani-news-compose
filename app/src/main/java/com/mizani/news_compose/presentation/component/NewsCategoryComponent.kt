@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
 
 @Composable
 fun NewsCategoriesComponent(
@@ -23,7 +22,7 @@ fun NewsCategoriesComponent(
         LazyRow {
             itemsIndexed (newsCategories) { index, it ->
                 Spacer(modifier = Modifier.width(16.dp))
-                ChipItem(text = it.first, index, index == selectedIndex) {
+                ChipItem(text = it.second, index, index == selectedIndex) {
                     selectedIndex = it
                     action.invoke(it)
                 }

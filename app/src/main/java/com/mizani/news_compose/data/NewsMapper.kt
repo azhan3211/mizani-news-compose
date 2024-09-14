@@ -6,16 +6,18 @@ import com.mizani.news_compose.data.remote.NewsResponse
 
 object NewsMapper {
 
-    fun mapResponseToDto(newsResponse: NewsResponse, category: String): NewsDto {
+    private val ESCAPE_CHARACTER_REGEX = "[^A-Za-z0-9]".toRegex()
+
+    fun NewsResponse.toDto(category: String): NewsDto {
         return NewsDto(
-            id = newsResponse.title,
-            title = newsResponse.title,
-            thumbnail = newsResponse.thumbnail.orEmpty(),
-            date = newsResponse.publishedAt.orEmpty(),
+            id = title.replace(ESCAPE_CHARACTER_REGEX, ""),
+            title = title,
+            thumbnail = thumbnail.orEmpty(),
+            date = publishedAt.orEmpty(),
             categoryName = category,
-            longDescription = newsResponse.content.orEmpty(),
-            shortDescription = newsResponse.description.orEmpty(),
-            url = newsResponse.url.orEmpty()
+            longDescription = content.orEmpty(),
+            shortDescription = description.orEmpty(),
+            url = url.orEmpty()
         )
     }
 
@@ -32,16 +34,16 @@ object NewsMapper {
         )
     }
 
-    fun mapEntityToDto(news: NewsEntity): NewsDto {
+    fun NewsEntity.toDto(): NewsDto {
         return NewsDto(
-            id = news.id,
-            title = news.title,
-            url = news.url,
-            shortDescription = news.shortDescription,
-            longDescription = news.longDescription,
-            categoryName = news.categoryName,
-            date = news.date,
-            thumbnail = news.thumbnail,
+            id = id,
+            title = title,
+            url = url,
+            shortDescription = shortDescription,
+            longDescription = longDescription,
+            categoryName = categoryName,
+            date = date,
+            thumbnail = thumbnail,
         )
     }
 }

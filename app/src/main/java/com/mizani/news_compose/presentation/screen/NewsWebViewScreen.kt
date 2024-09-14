@@ -1,9 +1,7 @@
-package com.mizani.news_compose.presentation.screen.webview
+package com.mizani.news_compose.presentation.screen
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,17 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.google.accompanist.web.WebView
 import com.google.accompanist.web.rememberWebViewState
 import com.mizani.news_compose.R
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 @Composable
-fun NewsWebView(
-    navController: NavController,
-    url: String
+fun NewsWebViewScreen(
+    url: String,
+    onBackClicked: () -> Unit = {}
 ) {
 
     val webViewState = rememberWebViewState(url = url)
@@ -46,7 +41,7 @@ fun NewsWebView(
                     modifier = Modifier
                         .size(25.dp)
                         .clickable {
-                            navController.popBackStack()
+                            onBackClicked.invoke()
                         }
                 )
             }

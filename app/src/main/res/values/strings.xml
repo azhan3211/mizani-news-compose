@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">news-compose</string>
+    <string name="you_are_using_local_data">You are using local data</string>
+    <string name="refresh">"Refresh"</string>
 </resources>

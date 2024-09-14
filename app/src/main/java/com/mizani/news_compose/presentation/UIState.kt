@@ -1,9 +1,9 @@
 package com.mizani.news_compose.presentation
 
-sealed class UIState<out T: Any, out E: Throwable> {
+sealed class UIState<out T, out E> {
 
-    object Loading: UIState<Nothing, Nothing>()
-    data class Success<T: Any>(val data: T): UIState<T, Nothing>()
-    data class Error<E: Throwable>(val error: Throwable): UIState<Nothing, E>()
+    data object Loading: UIState<Nothing, Nothing>()
+    data class Success<T>(val data: T): UIState<T, Nothing>()
+    data class Error<E>(val error: E): UIState<Nothing, E>()
 
 }

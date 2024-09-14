@@ -1,9 +1,9 @@
 package com.mizani.news_compose.presentation.screen
 
-sealed class Screen(val route: String) {
+sealed class NavigationRoute(val route: String) {
 
-    object NewsList : Screen("NewsList")
-    object NewsWebView : Screen("NewsWebView") {
+    data object NewsList : NavigationRoute("NewsList")
+    data object NewsWebView : NavigationRoute("NewsWebView") {
         fun withUrl(url: String) : String {
             return route.plus("/$url")
         }
@@ -14,7 +14,7 @@ sealed class Screen(val route: String) {
             return "$route/{${getUrlArg()}}"
         }
     }
-    object NewsDetail : Screen("NewsDetail") {
+    data object NewsDetail : NavigationRoute("NewsDetail") {
         fun withId(id: String) : String {
             return route.plus("/$id")
         }

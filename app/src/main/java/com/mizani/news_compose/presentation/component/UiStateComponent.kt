@@ -9,6 +9,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.mizani.news_compose.R
 
 @Composable
 fun Loading() {
@@ -22,19 +24,19 @@ fun Loading() {
 }
 
 @Composable
-fun ErrorPage(error: Throwable, action: () -> Unit = {}) {
+fun ErrorPage(errorMessage: String, action: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = error.message.orEmpty())
+        Text(text = errorMessage.orEmpty())
         Button(
             onClick = {
                 action.invoke()
             }
         ) {
-            Text(text = "Refresh")
+            Text(text = stringResource(id = R.string.refresh))
         }
     }
 }
