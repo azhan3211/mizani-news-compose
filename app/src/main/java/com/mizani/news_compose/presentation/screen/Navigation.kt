@@ -3,13 +3,9 @@ package com.mizani.news_compose.presentation.screen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Composable
 fun Navigation() {
@@ -29,7 +25,7 @@ fun Navigation() {
                 categories = viewModel.categories,
                 navigateToDetail = { id ->
                     viewModel.getNewsDetail(id)
-                    navController.navigate(NavigationRoute.NewsDetail.withId(id))
+                    navController.navigate(NavigationRoute.NewsDetail.route)
                 },
                 onCategoryChange = { category ->
                     viewModel.setSelectedCategory(category)
@@ -38,18 +34,12 @@ fun Navigation() {
             )
         }
         composable(
-            route = NavigationRoute.NewsDetail.fullPath(),
-            arguments = listOf(
-                navArgument(NavigationRoute.NewsDetail.getIdArg()) {
-                    type = NavType.StringType
-                }
-            )
+            route = NavigationRoute.NewsDetail.route
         ) {
             NewsDetailScreen(
                 newsDto = viewModel.newsDetail.value,
-                navigateToWebView = { url ->
-                    val source = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
-                    navController.navigate(NavigationRoute.NewsWebView.withUrl(source))
+                navigateToWebView = {
+                    navController.navigate(NavigationRoute.NewsWebView.route)
                 },
                 onBackClicked = {
                     navController.popBackStack()
@@ -57,17 +47,11 @@ fun Navigation() {
             )
         }
         composable(
-            route = NavigationRoute.NewsWebView.fullPath(),
-            arguments = listOf(
-                navArgument(NavigationRoute.NewsWebView.getUrlArg()) {
-                    type = NavType.StringType
-                }
-            )
+            route = NavigationRoute.NewsWebView.route
         ) {
-            val url = it.arguments?.getString(NavigationRoute.NewsWebView.getUrlArg()).orEmpty()
             NewsWebViewScreen(
                 onBackClicked = { navController.popBackStack() },
-                url = url
+                url = viewModel.newsDetail.value.url
             )
         }
     }
