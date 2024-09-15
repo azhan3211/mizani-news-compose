@@ -22,6 +22,7 @@ import com.mizani.news_compose.presentation.component.ErrorPage
 import com.mizani.news_compose.presentation.component.Loading
 import com.mizani.news_compose.presentation.component.NewsCategoriesComponent
 import com.mizani.news_compose.presentation.component.NewsItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -42,13 +43,18 @@ fun NewsListScreen(
             NewsCategoriesComponent(
                 newsCategories = categories
             ) { selectedIndex ->
-                scope.launch {
+                scope.launch(Dispatchers.Main) {
+                    launch(Dispatchers.IO) {
+                        pagerSelect.animateScrollToPage(selectedIndex)
+                    }
                     onCategoryChange.invoke(categories[selectedIndex].first)
-                    pagerSelect.animateScrollToPage(selectedIndex)
                 }
             }
         }
-        HorizontalPager(state = pagerSelect, userScrollEnabled = false) {
+        HorizontalPager(
+            state = pagerSelect,
+            userScrollEnabled = false
+        ) {
             NewsContent(
                 uiState,
                 navigateToDetail = navigateToDetail,

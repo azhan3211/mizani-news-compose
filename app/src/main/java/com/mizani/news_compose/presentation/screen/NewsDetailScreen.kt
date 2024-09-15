@@ -31,7 +31,7 @@ import com.mizani.news_compose.presentation.theme.NewscomposeTheme
 fun NewsDetailScreen(
     newsDto: NewsDto,
     onBackClicked: () -> Unit = {},
-    navigateToWebView: (String) -> Unit = {},
+    navigateToWebView: () -> Unit = {},
 ) {
 
     val scrollState = rememberScrollState()
@@ -60,7 +60,7 @@ fun NewsDetailScreen(
 @Composable
 private fun DetailContentSection(
     newsDto: NewsDto,
-    navigateToWebView: (String) -> Unit = {}
+    navigateToWebView: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -96,7 +96,7 @@ private fun DetailContentSection(
             fontSize = 14.sp,
             color = Color.Blue,
             modifier = Modifier.clickable {
-                navigateToWebView.invoke(newsDto.url)
+                navigateToWebView.invoke()
             }
         )
     }
