@@ -3,10 +3,9 @@ package com.mizani.news_compose.presentation.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -33,8 +32,10 @@ fun NewsListScreen(
     onCategoryChange: (String) -> Unit = {}
 ) {
 
-    val pagerSelect = rememberPagerState(pageCount = { categories.size })
     val scope = rememberCoroutineScope()
+    var selectedIndex by rememberSaveable {
+        mutableStateOf(0)
+    }
 
     Column {
         Row(
@@ -42,27 +43,20 @@ fun NewsListScreen(
         ) {
             NewsCategoriesComponent(
                 newsCategories = categories
-            ) { selectedIndex ->
+            ) { index ->
                 scope.launch(Dispatchers.Main) {
-                    launch(Dispatchers.IO) {
-                        pagerSelect.animateScrollToPage(selectedIndex)
-                    }
-                    onCategoryChange.invoke(categories[selectedIndex].first)
+                    onCategoryChange.invoke(categories[index].first)
+                    selectedIndex = index
                 }
             }
         }
-        HorizontalPager(
-            state = pagerSelect,
-            userScrollEnabled = false
-        ) {
-            NewsContent(
-                uiState,
-                navigateToDetail = navigateToDetail,
-                onRefresh = {
-                    onCategoryChange.invoke(categories[it].first)
-                }
-            )
-        }
+        NewsContent(
+            uiState,
+            navigateToDetail = navigateToDetail,
+            onRefresh = {
+                onCategoryChange.invoke(categories[selectedIndex].first)
+            }
+        )
     }
 
 }
@@ -73,37 +67,32 @@ private fun NewsContent(
     navigateToDetail: (String) -> Unit = {},
     onRefresh: () -> Unit = {}
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        content = { paddingValues ->
-            when (uiState) {
-                is UIState.Success ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (uiState) {
+            is UIState.Success ->
+                NewsListSection(
+                    data = uiState.data,
+                    navigateToDetail = navigateToDetail
+                )
+            is UIState.Error -> {
+                if (uiState.error.data.isEmpty()) {
+                    ErrorPage(
+                        errorMessage = uiState.error.message,
+                        action = {
+                            onRefresh.invoke()
+                        }
+                    )
+                } else {
                     NewsListSection(
-                        modifier = Modifier.padding(paddingValues),
-                        data = uiState.data,
+                        isLocalData = true,
+                        data = uiState.error.data,
                         navigateToDetail = navigateToDetail
                     )
-                is UIState.Error -> {
-                    if (uiState.error.data.isEmpty()) {
-                        ErrorPage(
-                            errorMessage = uiState.error.message,
-                            action = {
-                                onRefresh.invoke()
-                            }
-                        )
-                    } else {
-                        NewsListSection(
-                            isLocalData = true,
-                            modifier = Modifier.padding(paddingValues),
-                            data = uiState.error.data,
-                            navigateToDetail = navigateToDetail
-                        )
-                    }
                 }
-                else -> Loading()
             }
+            else -> Loading()
         }
-    )
+    }
 }
 
 @Composable

@@ -18,7 +18,10 @@ fun Navigation() {
         viewModel.getNews()
     }
 
-    NavHost(navController = navController, startDestination = NavigationRoute.NewsList.route) {
+    NavHost(
+        navController = navController,
+        startDestination = NavigationRoute.NewsList.route
+    ) {
         composable(route = NavigationRoute.NewsList.route) {
             NewsListScreen(
                 uiState = viewModel.uiStateMap,
