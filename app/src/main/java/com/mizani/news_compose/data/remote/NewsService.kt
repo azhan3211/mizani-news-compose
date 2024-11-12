@@ -13,6 +13,8 @@ interface NewsService {
     suspend fun getNews(
         @Query("country") country: String,
         @Query("category") category: String,
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20,
         @Query("apiKey") apiKey: String = BuildConfig.API_KEY
     ): Response<SuccessResponse<List<NewsResponse>>>
 

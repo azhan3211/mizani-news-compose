@@ -6,55 +6,87 @@ import com.mizani.news_compose.data.NewsMapper
 import com.mizani.news_compose.data.NewsMapper.toDto
 import com.mizani.news_compose.data.dao.NewsDao
 import com.mizani.news_compose.data.dto.ErrorDto
+import com.mizani.news_compose.data.dto.NewsDataDto
 import com.mizani.news_compose.data.dto.ResultDto
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-class NewsRepositoryImpl @Inject constructor(
+class NewsRepositoryImpl  @Inject constructor(
     private val newsService: NewsService,
     private val newsDao: NewsDao
 ): NewsRepository {
 
-    override suspend fun getNews(country: String, category: String): ResultDto<List<NewsDto>, ErrorDto<List<NewsDto>>> {
-        var localData = newsDao.getAll(categoryName = category)
+    override suspend fun getNews(
+        country: String,
+        category: String,
+        page: Int,
+        pageSize: Int
+    ): ResultDto<NewsDataDto, ErrorDto> {
         try {
-            var newsResponse = newsService.getNews(country, category)
+            val newsResponse = newsService.getNews(
+                country = country,
+                category = category,
+                page = page
+            )
             if (newsResponse.isSuccessful) {
+                val totalResult = newsResponse.body()?.totalResults ?: 0
                 val articles = newsResponse.body()?.articles ?: listOf()
-                if (articles.isNotEmpty()) {
-                    delete(category)
-                }
+                if (articles.isNotEmpty()) deleteLocalData(category)
                 val data = articles.map { it.toDto(category) }
-                insert(data)
-                return ResultDto.Success(data)
-            } else {
-                return ResultDto.Error(
-                    ErrorDto(
-                        message = newsResponse.errorBody().toString(),
-                        data = localData.first().map { it.toDto() }
+                if (page == 1) insertToLocalData(data)
+                return ResultDto.Success(
+                    NewsDataDto(
+                        news = data,
+                        totalResult = totalResult
                     )
+                )
+            } else {
+                return checkLocalData(
+                    page = page,
+                    errorMessage = newsResponse.errorBody().toString(),
+                    category = category
                 )
             }
         } catch (e: Exception) {
-            return ResultDto.Error(
+            return checkLocalData(
+                page = page,
+                errorMessage = e.message.toString(),
+                category = category
+            )
+        }
+    }
+
+    private suspend fun checkLocalData(
+        page: Int,
+        errorMessage: String,
+        category: String
+    ): ResultDto<NewsDataDto, ErrorDto>{
+        val localData = newsDao.getAll(categoryName = category).first().map { it.toDto() }
+        return if (localData.isNotEmpty() && page == 1) {
+            return ResultDto.Success(
+                NewsDataDto(
+                    news = localData,
+                    totalResult = localData.size
+                ),
+                errorMessage
+            )
+        } else {
+            ResultDto.Error(
                 ErrorDto(
-                    message = e.message.toString(),
-                    data = localData.first().map { it.toDto() }
+                    message = errorMessage
                 )
             )
         }
     }
 
-    override suspend fun insert(news: List<NewsDto>) {
+    override suspend fun insertToLocalData(news: List<NewsDto>) {
         val newsEntities = news.map {
             NewsMapper.mapDtoToEntity(it)
         }
         newsDao.insert(newsEntities)
     }
 
-    override suspend fun delete(categoryName: String) {
+    override suspend fun deleteLocalData(categoryName: String) {
         newsDao.delete(categoryName)
     }
 

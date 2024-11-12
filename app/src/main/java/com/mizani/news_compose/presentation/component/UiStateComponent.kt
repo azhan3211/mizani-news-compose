@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +17,9 @@ import com.mizani.news_compose.R
 
 @Composable
 fun Loading() {
-    Column {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)
+    ) {
         repeat(10) {
             NewsItemShimmer()
             Spacer(modifier = Modifier.height(10.dp))

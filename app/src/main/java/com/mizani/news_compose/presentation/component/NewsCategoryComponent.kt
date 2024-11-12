@@ -2,6 +2,7 @@ package com.mizani.news_compose.presentation.component
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -12,13 +13,16 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun NewsCategoriesComponent(
+    modifier: Modifier = Modifier,
     newsCategories: List<Pair<String, String>>,
     action: (Int) -> Unit
 ) {
     var selectedIndex by rememberSaveable {
         mutableStateOf(0)
     }
-    Row {
+    Row(
+        modifier = Modifier.padding(vertical = 16.dp).then(modifier)
+    ) {
         LazyRow {
             itemsIndexed (newsCategories) { index, it ->
                 Spacer(modifier = Modifier.width(16.dp))

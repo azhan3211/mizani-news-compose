@@ -26,7 +26,7 @@ fun NewsItemShimmer() {
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .padding(vertical = 4.dp, horizontal = 20.dp),
+            .padding(all = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Card(

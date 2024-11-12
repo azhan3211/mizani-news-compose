@@ -2,7 +2,7 @@ package com.mizani.news_compose.data.dto
 
 import java.io.Serializable
 
-class NewsDto(
+data class NewsDto(
     val id: String = "",
     val title: String = "",
     val shortDescription: String = "",

@@ -2,7 +2,7 @@ package com.mizani.news_compose.data.remote
 
 import com.google.gson.annotations.SerializedName
 
-class SuccessResponse<T>(
+data class SuccessResponse<T>(
     @SerializedName("status")
     val status: String,
     @SerializedName("totalResults")

@@ -1,61 +1,73 @@
 package com.mizani.news_compose.presentation.screen
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mizani.news_compose.R
 import com.mizani.news_compose.const.CategoryConst
 import com.mizani.news_compose.data.dto.ErrorDto
+import com.mizani.news_compose.data.dto.NewsDataDto
 import com.mizani.news_compose.data.dto.NewsDto
 import com.mizani.news_compose.presentation.UIState
 import com.mizani.news_compose.presentation.component.ErrorPage
 import com.mizani.news_compose.presentation.component.Loading
 import com.mizani.news_compose.presentation.component.NewsCategoriesComponent
 import com.mizani.news_compose.presentation.component.NewsItem
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.mizani.news_compose.presentation.component.NewsItemShimmer
 
 @Composable
 fun NewsListScreen(
-    uiState: UIState<List<NewsDto>, ErrorDto<List<NewsDto>>> = UIState.Loading,
+    uiState: UIState<NewsDataDto, ErrorDto> = UIState.Loading,
     categories: List<Pair<String, String>> = listOf(),
-    navigateToDetail: (String) -> Unit = {},
-    onCategoryChange: (String) -> Unit = {}
+    selectedCategory: String,
+    successMessage: String = "",
+    isLoadMore: Boolean = false,
+    hasMore: Boolean = false,
+    navigateToDetail: (NewsDto) -> Unit = {},
+    onCategoryChange: (String) -> Unit = {},
+    onRefresh: () -> Unit,
+    loadMore: () -> Unit
 ) {
 
-    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     var selectedIndex by rememberSaveable {
         mutableStateOf(0)
     }
 
+    LaunchedEffect(successMessage) {
+        if (successMessage.isNotEmpty()) {
+            Toast.makeText(context, successMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+
     Column {
-        Row(
-            modifier = Modifier.padding(vertical = 15.dp)
-        ) {
-            NewsCategoriesComponent(
-                newsCategories = categories
-            ) { index ->
-                scope.launch(Dispatchers.Main) {
-                    onCategoryChange.invoke(categories[index].first)
-                    selectedIndex = index
-                }
-            }
+        NewsCategoriesComponent(
+            newsCategories = categories
+        ) { index ->
+            onCategoryChange.invoke(categories[index].first)
+            selectedIndex = index
         }
         NewsContent(
-            uiState,
+            uiState = uiState,
+            selectedCategory = selectedCategory,
             navigateToDetail = navigateToDetail,
-            onRefresh = {
-                onCategoryChange.invoke(categories[selectedIndex].first)
-            }
+            isLoadMore = isLoadMore,
+            hasMore = hasMore,
+            onRefresh = onRefresh,
+            loadMore = loadMore
         )
     }
 
@@ -63,70 +75,92 @@ fun NewsListScreen(
 
 @Composable
 private fun NewsContent(
-    uiState: UIState<List<NewsDto>, ErrorDto<List<NewsDto>>> = UIState.Success(arrayListOf()),
-    navigateToDetail: (String) -> Unit = {},
-    onRefresh: () -> Unit = {}
+    uiState: UIState<NewsDataDto, ErrorDto> = UIState.Success(NewsDataDto()),
+    selectedCategory: String,
+    navigateToDetail: (NewsDto) -> Unit = {},
+    isLoadMore: Boolean = false,
+    hasMore: Boolean = false,
+    onRefresh: () -> Unit = {},
+    loadMore: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        when (uiState) {
-            is UIState.Success ->
-                NewsListSection(
-                    data = uiState.data,
-                    navigateToDetail = navigateToDetail
-                )
-            is UIState.Error -> {
-                if (uiState.error.data.isEmpty()) {
-                    ErrorPage(
-                        errorMessage = uiState.error.message,
-                        action = {
-                            onRefresh.invoke()
-                        }
-                    )
-                } else {
-                    NewsListSection(
-                        isLocalData = true,
-                        data = uiState.error.data,
-                        navigateToDetail = navigateToDetail
-                    )
+
+    val scrollStates = remember { mutableStateMapOf<String, LazyListState>() }
+    val listState = scrollStates.getOrPut(selectedCategory) { LazyListState() }
+
+    when (uiState) {
+        is UIState.Success ->
+            NewsListSection(
+                data = uiState.data.news,
+                listState = listState,
+                isLoadMore = isLoadMore,
+                navigateToDetail = navigateToDetail,
+                hasMore = hasMore,
+                loadMore = loadMore
+            )
+        is UIState.Error -> {
+            ErrorPage(
+                errorMessage = uiState.error.message,
+                action = {
+                    onRefresh.invoke()
                 }
-            }
-            else -> Loading()
+            )
         }
+        else -> Loading()
     }
 }
 
 @Composable
 private fun NewsListSection(
-    isLocalData: Boolean = false,
     modifier: Modifier = Modifier,
+    listState: LazyListState,
     data: List<NewsDto>,
-    navigateToDetail: (String) -> Unit = {}
+    navigateToDetail: (NewsDto) -> Unit = {},
+    isLoadMore: Boolean = false,
+    hasMore: Boolean = false,
+    loadMore: () -> Unit
 ) {
-    Column {
-        if (isLocalData) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                text = stringResource(id = R.string.you_are_using_local_data),
-                color = Color.Red
+
+    LazyColumn(
+        state = listState,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        itemsIndexed(data) { index, news ->
+            if (index >= data.lastIndex && isLoadMore.not()) {
+                loadMore.invoke()
+            }
+            NewsItem(
+                news = news,
+                onClick = {
+                    navigateToDetail.invoke(news)
+                }
             )
-            Spacer(modifier = Modifier.height(10.dp))
         }
-        LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            items(data) { data ->
-                NewsItem(
-                    news = data,
-                    onClick = {
-                        navigateToDetail.invoke(data.id)
-                    }
-                )
+
+        if (hasMore.not()) {
+            item {
+                NoMoreNews()
             }
         }
+
+        if (isLoadMore) {
+            item {
+                NewsItemShimmer()
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoMoreNews() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = stringResource(id = R.string.no_more_news))
     }
 }
 
@@ -141,8 +175,16 @@ private fun NewsListScreenPreview() {
     )
     MaterialTheme {
         NewsListScreen(
-            uiState = UIState.Error(ErrorDto(message = "error", data = listOf(dummyData))),
-            categories = CategoryConst.list
+            uiState = UIState.Success(
+                data = NewsDataDto(
+                    news = arrayListOf(dummyData),
+                    totalResult = 20
+                )
+            ),
+            selectedCategory = "business",
+            categories = CategoryConst.list,
+            loadMore = {},
+            onRefresh = {}
         )
     }
 }

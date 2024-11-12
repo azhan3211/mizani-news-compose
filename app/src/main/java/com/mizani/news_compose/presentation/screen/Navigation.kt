@@ -2,10 +2,12 @@ package com.mizani.news_compose.presentation.screen
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 
 @Composable
 fun Navigation() {
@@ -18,23 +20,39 @@ fun Navigation() {
         viewModel.getNews()
     }
 
+    val coroutine = rememberCoroutineScope()
+
     NavHost(
         navController = navController,
         startDestination = NavigationRoute.NewsList.route
     ) {
         composable(route = NavigationRoute.NewsList.route) {
-            NewsListScreen(
-                uiState = viewModel.uiStateMap,
-                categories = viewModel.categories,
-                navigateToDetail = { id ->
-                    viewModel.getNewsDetail(id)
-                    navController.navigate(NavigationRoute.NewsDetail.route)
-                },
-                onCategoryChange = { category ->
-                    viewModel.setSelectedCategory(category)
-                    viewModel.getNews()
-                }
-            )
+            with (viewModel) {
+                NewsListScreen(
+                    uiState = uiStateMap,
+                    categories = categories,
+                    selectedCategory = selectedCategory.value,
+                    successMessage = showMessage.value,
+                    isLoadMore = isLoadMore.value,
+                    hasMore = getHasMore(selectedCategory.value).value,
+                    navigateToDetail = { news ->
+                        getNewsDetail(news)
+                        navController.navigate(NavigationRoute.NewsDetail.route)
+                    },
+                    onCategoryChange = { category ->
+                        setSelectedCategory(category)
+                        getNews()
+                    },
+                    onRefresh = {
+                        getNews()
+                    },
+                    loadMore = {
+                        coroutine.launch {
+                            setLoadMoreJob(loadMore())
+                        }
+                    }
+                )
+            }
         }
         composable(
             route = NavigationRoute.NewsDetail.route
