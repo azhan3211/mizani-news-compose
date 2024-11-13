@@ -44,7 +44,7 @@ fun Navigation() {
                         getNews()
                     },
                     onRefresh = {
-                        getNews()
+                        getNews(true)
                     },
                     loadMore = {
                         coroutine.launch {

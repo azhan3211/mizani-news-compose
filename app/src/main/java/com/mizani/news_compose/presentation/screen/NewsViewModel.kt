@@ -16,7 +16,6 @@ import com.mizani.news_compose.data.repository.NewsRepository
 import com.mizani.news_compose.presentation.UIState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -54,9 +53,7 @@ class NewsViewModel @Inject constructor(
     private var loadMoreJob: Job? = null
 
     fun getNewsDetail(newsDto: NewsDto) {
-        viewModelScope.launch {
-            _newsDetail.value = newsDto
-        }
+        _newsDetail.value = newsDto
     }
 
     private fun getPage(category: String): Int {
@@ -70,33 +67,63 @@ class NewsViewModel @Inject constructor(
         _newsPage[category] = newPage
     }
 
-    fun getNews() {
+    private fun initPreState(category: String, isRefresh: Boolean) {
+        val uiState = _uiStatesMap[category]
+        if (isRefresh && uiState is UIState.Success) {
+            _uiStatesMap[category] = UIState.Success(
+                data = uiState.data,
+                isRefreshing = true
+            )
+        } else {
+            _uiStatesMap[category] = UIState.Loading
+        }
+        if (isRefresh) {
+            updatePage(category, 1)
+        }
+    }
+
+    fun getNews(isRefresh: Boolean = false) {
         val category = _selectedCategory.value
         val isCategoryHasBeenLoaded = _uiStatesMap.containsKey(category)
         val isCategoryLoadedError = _uiStatesMap[category] is UIState.Error
-        if (isCategoryHasBeenLoaded.not() || isCategoryLoadedError) {
-            _uiStatesMap[category] = UIState.Loading
+        if (isCategoryHasBeenLoaded.not() || isCategoryLoadedError || isRefresh) {
+            initPreState(category, isRefresh)
             viewModelScope.launch {
-                when (val data = repository.getNews(
-                    country = country,
-                    category = category,
+                getNews(
                     page = getPage(category),
-                    pageSize = pageSize
-                )) {
-                    is ResultDto.Success -> {
+                    category = category,
+                    onSuccess = { data ->
                         _uiStatesMap[category] = UIState.Success(
                             data = data.data,
-                            successMessage = data.successMessage
+                            successMessage = data.successMessage,
+                            isRefreshing = false
                         )
                         _showMessage.value = data.successMessage
-                    }
-
-                    is ResultDto.Error -> {
+                    },
+                    onError = { error ->
                         _uiStatesMap[category] =
-                            UIState.Error(ErrorDto(message = data.error.message))
+                            UIState.Error(ErrorDto(message = error.error.message))
                     }
-                }
+                )
             }
+        }
+    }
+
+    private suspend fun getNews(
+        page: Int,
+        category: String,
+        onSuccess: (ResultDto.Success<NewsDataDto>) -> Unit,
+        onError: (ResultDto.Error<ErrorDto>) -> Unit
+    ) {
+        when (val data = repository.getNews(
+            country = country,
+            category = category,
+            page = page,
+            pageSize = pageSize
+        )) {
+            is ResultDto.Success -> onSuccess.invoke(data)
+
+            is ResultDto.Error -> onError.invoke(data)
         }
     }
 
@@ -105,8 +132,7 @@ class NewsViewModel @Inject constructor(
         if ((uiState is UIState.Success).not()) return mutableStateOf(false)
         val data = (uiState as UIState.Success)
         val totalCurrent = data.data.news.size
-        val totalAvailable = data.data.totalResult
-        return mutableStateOf(totalCurrent < totalAvailable)
+        return mutableStateOf(getPage(category) * 20 == totalCurrent)
     }
 
     suspend fun loadMore(): Job {
@@ -114,51 +140,41 @@ class NewsViewModel @Inject constructor(
             val category = _selectedCategory.value
             if (getHasMore(category).value.not()) return@launch
             _isLoadMore.value = true
-            val page = getPage(category) + 1
-            delay(10000) // for testing change page while processing
-            val result = repository.getNews(
-                country = country,
+            val nextPage = getPage(category) + 1
+            getNews(
                 category = category,
-                page = page,
-                pageSize = pageSize
-            )
-            when (result) {
-                is ResultDto.Success -> {
-                    val data = _uiStatesMap[category]
-                    val news = (data as UIState.Success).data
+                page = nextPage,
+                onSuccess = { result ->
                     appendData(
-                        newsDataDto = news,
-                        newsMore = result.data.news,
-                        category = category,
-                        successMessage = result.successMessage
+                        result = result,
+                        category = category
                     )
                     _isLoadMore.value = false
                     if (result.successMessage.isEmpty()) {
-                        updatePage(category = category, newPage = page)
+                        updatePage(category = category, newPage = nextPage)
                     }
-                }
-                is ResultDto.Error -> {
+                },
+                onError = {
                     _isLoadMore.value = false
                 }
-            }
+            )
         }
     }
 
     private fun appendData(
-        newsDataDto: NewsDataDto,
-        newsMore: List<NewsDto>,
-        category: String,
-        successMessage: String
+        result: ResultDto.Success<NewsDataDto>,
+        category: String
     ) {
-        val newData = arrayListOf<NewsDto>()
-        newData.addAll(newsDataDto.news)
-        newData.addAll(newsMore)
+        val uiState = (_uiStatesMap[category] as UIState.Success).data
+        val newNews = arrayListOf<NewsDto>()
+        newNews.addAll(uiState.news)
+        newNews.addAll(result.data.news)
         _uiStatesMap[category] = UIState.Success(
             data = NewsDataDto(
-                news = newData,
-                totalResult = newsDataDto.totalResult
+                news = newNews,
+                totalResult = uiState.totalResult
             ),
-            successMessage = successMessage
+            successMessage = result.successMessage
         )
     }
 

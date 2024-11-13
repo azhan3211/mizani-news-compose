@@ -6,6 +6,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -95,7 +99,9 @@ private fun NewsContent(
                 isLoadMore = isLoadMore,
                 navigateToDetail = navigateToDetail,
                 hasMore = hasMore,
-                loadMore = loadMore
+                loadMore = loadMore,
+                onRefresh = onRefresh,
+                isRefreshing = uiState.isRefreshing
             )
         is UIState.Error -> {
             ErrorPage(
@@ -109,6 +115,7 @@ private fun NewsContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NewsListSection(
     modifier: Modifier = Modifier,
@@ -117,36 +124,43 @@ private fun NewsListSection(
     navigateToDetail: (NewsDto) -> Unit = {},
     isLoadMore: Boolean = false,
     hasMore: Boolean = false,
-    loadMore: () -> Unit
+    loadMore: () -> Unit,
+    onRefresh: () -> Unit,
+    isRefreshing: Boolean
 ) {
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh
     ) {
-        itemsIndexed(data) { index, news ->
-            if (index >= data.lastIndex && isLoadMore.not()) {
-                loadMore.invoke()
-            }
-            NewsItem(
-                news = news,
-                onClick = {
-                    navigateToDetail.invoke(news)
+        LazyColumn(
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
+            itemsIndexed(data) { index, news ->
+                if (index >= data.lastIndex && isLoadMore.not()) {
+                    loadMore.invoke()
                 }
-            )
-        }
-
-        if (hasMore.not()) {
-            item {
-                NoMoreNews()
+                NewsItem(
+                    news = news,
+                    onClick = {
+                        navigateToDetail.invoke(news)
+                    }
+                )
             }
-        }
 
-        if (isLoadMore) {
-            item {
-                NewsItemShimmer()
+            if (hasMore.not()) {
+                item {
+                    NoMoreNews()
+                }
+            }
+
+            if (isLoadMore) {
+                item {
+                    NewsItemShimmer()
+                }
             }
         }
     }
