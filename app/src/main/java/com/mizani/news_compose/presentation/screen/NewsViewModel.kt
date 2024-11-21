@@ -92,13 +92,11 @@ class NewsViewModel @Inject constructor(
                 getNews(
                     page = getPage(category),
                     category = category,
-                    onSuccess = { data ->
-                        _uiStatesMap[category] = UIState.Success(
-                            data = data.data,
-                            successMessage = data.successMessage,
-                            isRefreshing = false
+                    onSuccess = { result ->
+                        onGetNewsSuccess(
+                            category = category,
+                            result = result
                         )
-                        _showMessage.value = data.successMessage
                     },
                     onError = { error ->
                         _uiStatesMap[category] =
@@ -107,6 +105,18 @@ class NewsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun onGetNewsSuccess(
+        category: String,
+        result: ResultDto.Success<NewsDataDto>
+    ) {
+        _uiStatesMap[category] = UIState.Success(
+            data = result.data,
+            successMessage = result.successMessage,
+            isRefreshing = false
+        )
+        _showMessage.value = result.successMessage
     }
 
     private suspend fun getNews(
@@ -145,19 +155,31 @@ class NewsViewModel @Inject constructor(
                 category = category,
                 page = nextPage,
                 onSuccess = { result ->
-                    appendData(
-                        result = result,
-                        category = category
+                    onLoadMoreSuccess(
+                        nextPage = nextPage,
+                        category = category,
+                        result = result
                     )
-                    _isLoadMore.value = false
-                    if (result.successMessage.isEmpty()) {
-                        updatePage(category = category, newPage = nextPage)
-                    }
                 },
                 onError = {
                     _isLoadMore.value = false
                 }
             )
+        }
+    }
+
+    private fun onLoadMoreSuccess(
+        nextPage: Int,
+        category: String,
+        result: ResultDto.Success<NewsDataDto>
+    ) {
+        appendData(
+            result = result,
+            category = category
+        )
+        _isLoadMore.value = false
+        if (result.successMessage.isEmpty()) {
+            updatePage(category = category, newPage = nextPage)
         }
     }
 
